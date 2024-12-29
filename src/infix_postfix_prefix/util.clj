@@ -43,8 +43,8 @@
 ;; > (util/put-new {:c -1} :a 11 :b 27 :c 6 :a 21)
 ;; {:c -1, :a 11, :b 27}
 
-(defmacro if-first [[x xs] then else]
+(defmacro if-first-rest [[fst rst xs] then else]
   `(let [coll# ~xs]
      (if (seq coll#)
-       (let [~x (first coll#)] ~then)
+       (let [~fst (first coll#) ~rst (rest coll#)] ~then)
        ~else)))
