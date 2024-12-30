@@ -48,3 +48,21 @@
      (if (seq coll#)
        (let [~fst (first coll#) ~rst (rest coll#)] ~then)
        ~else)))
+
+(defn- find-right-index [coll found?]
+  (loop [i (dec (count coll))]
+    (if (< i 0)
+      [:error nil]
+      (if (found? (nth coll i)) [:ok i] (recur (dec i))))))
+
+(defn split-right-fn
+  "Split at the right most index where `found?` returns logical true via
+  [:result [left mid right]] where (concat left [mid] right) is the same
+  sequence as the original `coll`. If not found, [:error [[] nil coll]]."
+  [coll found?]
+  (map-result [[_ i] (find-right-index coll found?)]
+              (let [[left latter] (split-at i coll)
+                    mid           (first latter)
+                    right         (rest latter)]
+                [:ok [left mid right]])
+              [:error [[] nil coll]]))
