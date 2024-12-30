@@ -30,7 +30,9 @@
   (fn [[i ch]] (if-let [v (m ch)] [i v])))
 
 ;; record may be better?
-(defn- base-token [kind name start] {:kind kind, :name name, :start start})
+(defn- base-token
+  ([kind name start] (base-token kind name start "NONE"))
+  ([kind name start s] {:kind kind, :name name, :start start, :string s}))
 
 ;; -----------------------------------------------------------------------------
 ;; <number>
@@ -72,7 +74,8 @@
              (<non-negative-number>->int coll)))]))
 
 (defn- make-number [[indices number]]
-  (-> (base-token :number :integer (first indices)) (assoc :which number)))
+  (-> (base-token :number :integer (first indices) (str (when (< number 0) \~) (abs number)))
+      (assoc :which number)))
 
 (defn- split-number [s]
   (when-let [fst-ch (some-> (first s) (second) (int))]
@@ -97,11 +100,11 @@
 
 (def operators
   "Defined operators. Each of them takes 2 arguments and returns result."
-  (-> {\+ [+ :plus], \- [- :minus], \* [* :mult], \/ [math/floor-div :div], \% [rem :rem]}
+  (-> {\+ [+ :plus "+"], \- [- :minus "-"], \* [* :mult "*"], \/ [math/floor-div :div "/"], \% [rem :rem "%"]}
       (update-vals #(update %1 0 wrapped-arith))))
 
-(defn- make-op [[start [op name]]]
-  (-> (base-token :op name start) (assoc :which op)))
+(defn- make-op [[start [op name s]]]
+  (-> (base-token :op name start s) (assoc :which op)))
 
 (defn next-op
   "Returns [token seq] if the next token in `s` is an operator. Returns logical

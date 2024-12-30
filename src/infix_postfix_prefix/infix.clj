@@ -1,5 +1,6 @@
 (ns infix-postfix-prefix.infix
-  (:require [infix-postfix-prefix.util :as util]))
+  (:require [infix-postfix-prefix.util :as util]
+            [clojure.string :as str]))
 
 ;; -----------------------------------------------------------------------------
 ;; matching parentheses
@@ -51,6 +52,7 @@
 ;; -----------------------------------------------------------------------------
 ;; parsing into tree by BNF
 ;; -----------------------------------------------------------------------------
+;; making formula tree
 
 (declare <add-or-sub>)
 
@@ -97,14 +99,21 @@
                                     :cause  m}])))
 
 ;; -----------------------------------------------------------------------------
+;; putting it all together
+;; -----------------------------------------------------------------------------
 
-(defn- tokens->tree [tokens]
+(defn infix-tokens->tree
+  "Creates a formula tree from `tokens` if it represents a valid infix
+  notation."
+  [tokens]
   (if (seq tokens)
     (util/map-result-ok [[_ ptree] (tokens->paren-tree tokens)]
                         (paren-tree->tree ptree))
     [:error {:reason "empty expression"}]))
 
-(defn- eval-tree [tree]
+(defn eval-tree
+  "Evaluates a formula tree. Returns result."
+  [tree]
   (case (:kind tree)
     :number [:ok (:which tree)]
     :op     (let [{:keys [left right which start]} tree]
@@ -119,5 +128,38 @@
 (defn eval-infix
   "Evaluates infix notation."
   [tokens]
-  (util/map-result-ok [[_ tree] (tokens->tree tokens)]
+  (util/map-result-ok [[_ tree] (infix-tokens->tree tokens)]
                       (eval-tree tree)))
+
+;; -----------------------------------------------------------------------------
+;; stringify
+;; -----------------------------------------------------------------------------
+;; prefix and postfix notations can be constructed with DFS on formula tree. I
+;; am going to convert between them via
+;; {pre,post}fix string -> infix string -> formula tree -> {post,pre}fix string
+
+(defn tree->prefix-string
+  "Given a valid formula tree, returns a string representing its prefix
+  notation."
+  [tree]
+  (case (:kind tree)
+    :number (:string tree)
+    :op     (str/join " " [(:string tree) (tree->prefix-string (:left tree)) (tree->prefix-string (:right tree))])))
+
+(defn tree->postfix-string
+  "Given a valid formula tree, returns a string representing its postfix
+  notation."
+  [tree]
+  (case (:kind tree)
+    :number (:string tree)
+    :op     (str/join " " [(tree->postfix-string (:left tree)) (tree->postfix-string (:right tree)) (:string tree)])))
+
+(defn tree->infix-string
+  "Given a valid formula tree, returns a string representing its infix
+  notation using a lot of parentheses."
+  [tree]
+  (case (:kind tree)
+    :number (:string tree)
+    :op     (str "("
+                 (str/join " " [(tree->infix-string (:left tree)) (:string tree) (tree->infix-string (:right tree))])
+                 ")")))
