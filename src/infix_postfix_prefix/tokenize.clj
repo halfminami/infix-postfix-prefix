@@ -36,33 +36,50 @@
 ;; <number>
 ;; -----------------------------------------------------------------------------
 
-;; map fn can't be int
-;; --- would evaluate (int ch) at compile time which is symbol
-#_
-(defmacro ^:private nonzero-digit? [ch]
-  `(<= ~@(map (fn [x] `(int ~x)) `(\1 ~ch \9))))
-;; this is inelegant
-
 (defn- nonzero-digit? [ch] (<= (int \1) (int ch) (int \9)))
 
 (defn- digit? [ch] (or (nonzero-digit? ch) (= (int \0) (int ch))))
 
-(defn- <number>? [coll] {:pre [(every? digit? coll)]}
+;; split only
+(defn- split-first-neg [coll]
+  (when-first [neg coll]
+    (if (= (int \~) (int neg)) (split-at 1 coll) (split-at 0 coll))))
+
+;; split and validate
+(defn- neg-non-negative [coll]
+  (when-let [[neg coll] (split-first-neg coll)]
+    (and (every? digit? coll) [neg coll])))
+
+(defn- <non-negative-number>? [coll] {:pre [(every? digit? coll)]}
   (when-first [fst coll]
     (or (nonzero-digit? fst) (empty? (rest coll)))))
 
+(defn- <number>? [coll]
+  (when-let [[neg num] (neg-non-negative coll)]
+    (<non-negative-number>? num)))
+
 (defn- char->integer [ch] {:pre [(digit? ch)]} (- (int ch) (int \0)))
+
+(defn- <non-negative-number>->int [coll] {:pre [(<non-negative-number>? coll)]}
+  (reduce #(+ (* 10 %1) %2) 0 (map char->integer coll)))
 
 ;; handles empty coll
 (defn- <number>->int [[indices coll]]
   (and (<number>? coll)
-       [indices (reduce #(+ (* 10 %1) %2) 0 (map char->integer coll))]))
+       [indices
+        (let [[neg coll] (split-first-neg coll)]
+          (* (if (seq neg) -1 1)
+             (<non-negative-number>->int coll)))]))
 
 (defn- make-number [[indices number]]
   (-> (base-token :number :integer (first indices)) (assoc :which number)))
 
-(defn- split-number [s] (let [[fst rst] (split-with #(digit? (second %1)) s)]
-                          [(util/unzip fst) rst]))
+(defn- split-number [s]
+  (when-let [fst-ch (some-> (first s) (second) (int))]
+    (let [[prep coll] (if (= (int \~) (int fst-ch)) (split-at 1 s) (split-at 0 s))
+          [fst rst] (split-with #(digit? (second %1)) coll)
+          fst (concat prep fst)]
+      [(util/unzip fst) rst])))
 
 (defn next-number
   "Returns [token seq] if the next token in `s` is <number>. Returns logical
@@ -113,7 +130,7 @@
   "Returns [token seq] if there is a valid token in the beginning of the `s`.
   Doesn't ignore blank characters. Returns logical false otherwise."
   [s]
-  ((some-fn next-op next-paren next-number) s))
+  ((some-fn next-number next-op next-paren) s))
 
 (defn- tokenize-error [rst]
   {:reason "I don't know how to parse this"

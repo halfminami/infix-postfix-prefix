@@ -15,12 +15,19 @@
   (is (token-result= [{:kind :number, :which 5040} '()]
                      (next-number (util/with-index (seq "5040")))))
   (is (token-result= [{:kind :number, :which 1} '((1 \o) (2 \8))]
-                     (next-number (util/with-index (seq "1o8"))))))
+                     (next-number (util/with-index (seq "1o8")))))
+  (is (token-result= [{:kind :number, :which -10} '((3 \~))]
+                     (next-number (util/with-index (seq "~10~")))))
+  (is (token-result= [{:kind :number, :which 0} '()]
+                     (next-number (util/with-index (seq "~0"))))))
 
 (deftest non-number-test
   (is (not (next-number (util/with-index (seq "02")))))
   (is (not (next-number (util/with-index (seq "x")))))
-  (is (not (next-number '()))))
+  (is (not (next-number '())))
+  (is (not (next-number (util/with-index (seq "~~1")))))
+  (is (not (next-number (util/with-index (seq "~00")))))
+  (is (not (next-number (util/with-index (seq "~"))))))
 
 (deftest operator-test
   (is (token-result= [{:kind :op, :name :plus} '((1 \1) (2 \8))]
@@ -79,9 +86,25 @@
                               {:kind :op, :start 2}
                               {:kind :number, :start 3}
                               {:kind :paren, :start 4}]]
-                        (tokenize "(3/2)"))))
+                        (tokenize "(3/2)")))
+  (is (tokenize-result= [:ok [{:kind :op, :start 0, :name :minus}
+                              {:kind :number, :start 1, :which 10}
+                              {:kind :op, :start 3, :name :minus}
+                              {:kind :number, :start 4, :which 0}
+                              {:kind :op, :start 5, :name :minus}]]
+                        (tokenize "-10-0-")))
+  (is (tokenize-result= [:ok [{:kind :number, :start 0, :which -10}
+                              {:kind :number, :start 3, :which 0}
+                              {:kind :op, :start 5, :name :minus}]]
+                        (tokenize "~10~0-")))
+  (is (tokenize-result= [:ok [{:kind :op, :start 0, :name :minus}
+                              {:kind :number, :start 1, :which 1}
+                              {:kind :op, :start 2, :name :minus}
+                              {:kind :number, :start 3, :which -10}]]
+                        (tokenize "-1-~10"))))
 
 (deftest tokenize-invalid-test
   (is (tokenize-result= [:error {:start 0}] (tokenize "00")))
   (is (tokenize-result= [:error {:start 0}] (tokenize "a")))
-  (is (tokenize-result= [:error {:start 4}] (tokenize " */%00"))))
+  (is (tokenize-result= [:error {:start 4}] (tokenize " */%00")))
+  (is (tokenize-result= [:error {:start 1}] (tokenize "0~+2"))))

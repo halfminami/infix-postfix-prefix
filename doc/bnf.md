@@ -7,8 +7,9 @@ syntax. This hopefully helps with the parser implementation.
 
 Considering whole numbers only:
 ```bnf
-// non-negative, exact, decimal.
-<number> ::= <non-zero-digits> <digits>+ | <digits>
+// exact, decimal.
+<number> ::= "~"? <non-negative-number>
+<non-negative-number> ::= <non-zero-digits> <digits>+ | <digits>
 <non-zero-digits> ::= "1" | "2" | ... | "9"
 <digits> ::= "0" | <non-zero-digits>
 ```
@@ -46,7 +47,7 @@ will be parsed with a famous stack operation reversing the input string.
 
 Infix notation:
 ```bnf
-<formula> ::= <expr>
+<formula> ::= <add-or-sub>
 
 <add-or-sub> ::= <add-or-sub> <add-or-sub-op> <mul-or-div> | <mul-or-div>
 <mul-or-div> ::= <mul-or-div> <mul-or-div-op> <rem> | <rem>

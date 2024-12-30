@@ -15,7 +15,9 @@
   (is (= [:ok 3]
          (eval-postfix (tokenize-unwrap "5 2 -"))))
   (is (= [:ok 3]
-         (eval-postfix (tokenize-unwrap "3 4 2 1 * 8 - 9 + % *")))))
+         (eval-postfix (tokenize-unwrap "3 4 2 1 * 8 - 9 + % *"))))
+  (is (= [:ok 2]
+         (eval-postfix (tokenize-unwrap "0 ~2 -")))))
 
 (defn eval-error= [want-m reason-re [sym m]]
   (and (= :error sym)
@@ -27,10 +29,16 @@
                    (eval-postfix (tokenize-unwrap ""))))
   (is (eval-error= {} #"many"
                    (eval-postfix (tokenize-unwrap "1 2"))))
+  (is (eval-error= {} #"many"
+                   (eval-postfix (tokenize-unwrap "1 2 / 4 5 -"))))
+  (is (eval-error= {:start 0} #"early"
+                   (eval-postfix (tokenize-unwrap "/"))))
   (is (eval-error= {:start 2} #"early"
                    (eval-postfix (tokenize-unwrap "1 *"))))
   (is (eval-error= {:start 4} #"math"
-                   (eval-postfix (tokenize-unwrap "1 0 /")))))
+                   (eval-postfix (tokenize-unwrap "1 0 /"))))
+  (is (eval-error= {:start 4} #"math"
+                   (eval-postfix (tokenize-unwrap "0 ~0%")))))
 
 (deftest prefix-valid-test
   (is (= [:ok 8]
@@ -40,4 +48,6 @@
   (is (= [:ok 3]
          (eval-prefix (tokenize-unwrap "- 5 2"))))
   (is (= [:ok 3]
-         (eval-prefix (tokenize-unwrap "* 3 % 4 + - * 1 2 8 9")))))
+         (eval-prefix (tokenize-unwrap "* 3 % 4 + - * 1 2 8 9"))))
+  (is (= [:ok 2]
+         (eval-prefix (tokenize-unwrap "- 0 ~2")))))
