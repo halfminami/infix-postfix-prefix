@@ -128,8 +128,13 @@
 (defn eval-infix
   "Evaluates infix notation."
   [tokens]
-  (util/map-result-ok [[_ tree] (infix-tokens->tree tokens)]
-                      (eval-tree tree)))
+  (util/map-result-ok
+   [[_ tree] (infix-tokens->tree tokens)]
+   (util/map-result-error
+    [[_ data] (eval-tree tree)]
+    (let [{:keys [start reason]} data]
+      [:error {:reason (format "evaluation failed at %s (%s)" start reason)
+               :start start, :cause data}]))))
 
 ;; -----------------------------------------------------------------------------
 ;; stringify

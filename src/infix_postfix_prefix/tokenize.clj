@@ -27,7 +27,7 @@
   "Returns a function that takes (index char) and applies char to `map`. Used
   to create `convert` with `first-rest` for `make-next-extractor`."
   [m]
-  (fn [[i ch]] (if-let [v (m ch)] [i v])))
+  (fn [[i ch]] (when-let [v (m ch)] [i v])))
 
 ;; record may be better?
 (defn- base-token
@@ -40,7 +40,7 @@
 
 (defn- nonzero-digit? [ch] (<= (int \1) (int ch) (int \9)))
 
-(defn- digit? [ch] (or (nonzero-digit? ch) (= (int \0) (int ch))))
+(defn- digit? [ch] (or (nonzero-digit? ch) (= 0 (compare ch \0))))
 
 ;; split only
 (defn- split-first-neg [coll]
@@ -142,10 +142,11 @@
 (defn tokenize
   "Returns [:ok tokens] unless it is invalid. If invalid, returns [:error map]
   containing the position of the invalid character."
-  [string]
-  (loop [rst (util/with-index (seq string)) tokens []]
-    (if-let [rst (seq (drop-blank rst))]
-      (if-let [[token rst] (next-token rst)]
-        (recur rst (conj tokens token))
-        [:error (tokenize-error rst)])
-      [:ok tokens])))
+  ([string] (tokenize string 0))
+  ([string offset]
+   (loop [rst (util/with-index offset (seq string)) tokens []]
+     (if-let [rst (seq (drop-blank rst))]
+       (if-let [[token rst] (next-token rst)]
+         (recur rst (conj tokens token))
+         [:error (tokenize-error rst)])
+      [:ok tokens]))))

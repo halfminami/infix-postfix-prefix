@@ -19,9 +19,18 @@
 ;; > (unzip [[1 :a 10] [2 :b 20] [3 :c]])
 ;; ((1 2 3) (:a :b :c))
 
-(defn with-index [coll] (map-indexed list coll))
+(defn with-index
+  ([coll] (with-index 0 coll))
+  ([offset coll]
+   (if (seq coll)
+     (reductions (fn [[i _] x] (list (inc i) x))
+                 (list offset (first coll))
+                 (rest coll))
+     coll)))
 ;; > (with-index [:a :b :c])
 ;; ((0 :a) (1 :b) (2 :c))
+;; > (with-index 42 [:a :b :c])
+;; ((42 :a) (43 :b) (44 :c))
 
 ;; using core.match may be better?
 (defmacro map-result [[bind result] ok error]

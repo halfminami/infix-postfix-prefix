@@ -23,7 +23,7 @@
   Returns [:ok stack] if no error. If the stack doesn't contain enough items
   when `pop?`, returns [:error m] containing the intermediate state of the stack
   and tokens."
-  [tokens pop? combine arity extract-token] {:pre [(> arity 0)]}
+  [tokens pop? combine arity extract-token] {:pre [(nat-int? arity)]}
   (letfn [(read-token [stack token]
             (if (pop? token)
               (if-let [[fst rst] (split-at-strict arity stack)]
