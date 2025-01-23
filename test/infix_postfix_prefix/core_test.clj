@@ -38,7 +38,7 @@
                 (eval-repl "1+")))
     (is (error= {:start 2} #"no token"
                 (eval-repl "1+*2")))
-    (is (error= {:start 0} #"many"
+    (is (error= {:start 1} #"too many"
                 (eval-repl "1~2+3"))))
   (testing "special prefix"
     (is (error= {} #"empty"

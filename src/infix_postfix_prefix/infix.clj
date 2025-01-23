@@ -64,7 +64,13 @@
           :number  [:ok (assoc token :left nil :right nil)]
           [:error {:reason "expected a number or expression, got something else", :token token}]))
     0 [:error {:reason "expected a single token, got no token"}]
-    [:error {:reason "expected a single token, got too many tokens", :token (first ptree)}]))
+    [:error {:reason "expected a single token, got too many tokens"
+             :token  (let [second-thing (second ptree)] ; may not be wrapped
+                       (case (:kind second-thing)
+                         :wrapped (-> second-thing
+                                      (:which) ; nodes
+                                      (first))
+                         second-thing))}]))
 
 (defmacro ^:private bnf-branch
   [split-token? found-left found-right not-found ptree]

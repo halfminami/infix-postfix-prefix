@@ -48,9 +48,9 @@
     (is (eval-error= {:start 2} #"extra"
                      (eval-infix (tokenize-unwrap "11)")))))
   (testing "syntax"                     ; may be subject to change..
-    (is (eval-error= {:start 0} #"too many"
-                     (eval-infix (tokenize-unwrap "1 2+3"))))
     (is (eval-error= {:start 2} #"too many"
+                     (eval-infix (tokenize-unwrap "1 2+3"))))
+    (is (eval-error= {:start 3} #"too many"
                      (eval-infix (tokenize-unwrap "2+3~1"))))
     (is (eval-error= {:start 0} #"no token"
                      (eval-infix (tokenize-unwrap "+"))))
@@ -61,7 +61,12 @@
     (is (eval-error= {:start 3} #"no token"
                      (eval-infix (tokenize-unwrap "1+3*"))))
     (is (eval-error= {:start 0} #"no token"
-                     (eval-infix (tokenize-unwrap "+1*3")))))
+                     (eval-infix (tokenize-unwrap "+1*3"))))
+    (is (eval-error= {:start 3} #"too many"
+                     (eval-infix (tokenize-unwrap "33 4"))))
+    ;; this may not be suitable for being handled at this level; it's repl's job
+    (is (eval-error= {:start 10} #"too many"
+                     (eval-infix (tokenize-unwrap "(10 + 3) (3 / 2)")))))
   (testing "math"
     (is (eval-error= {:start 1} #"math"
                      (eval-infix (tokenize-unwrap "1/0"))))

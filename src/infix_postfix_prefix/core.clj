@@ -10,15 +10,15 @@
   "Tries to detect infix, postfix and prefix notation."
   [tokens]
   (cond
-    (some #(= :paren (:kind %1)) tokens) :infix
-    (= :op (:kind (first tokens)))       :prefix
-    (= :op (:kind (last tokens)))        :postfix
-    :else                                :infix))
+    (= :op (:kind (first tokens))) :prefix
+    (= :op (:kind (last tokens)))  :postfix
+    :else                          :infix))
 
 (defn- formula-with-notation
-  "Given an input string maybe with special prefix, returns [notation string].
-  `string` is ready to be parsed. `notation` is `:auto` if isn't specified by
-  user."
+  "Given an input string maybe with special prefix, returns [notation start
+  string].
+  `string` is ready to be parsed with index offset `start`. `notation` is
+  `:auto` if isn't specified by user."
   [s]
   (cond
     (str/starts-with? s (prm/special-prefix :infix))
@@ -37,8 +37,8 @@
     [:auto 0 s]))
 
 (defn- tokenize-detect-notation
-  "Given an input string maybe with special prefix, returns result of
-  [notation tokens]."
+  "Given an input string maybe with special prefix, returns [notation string
+  tokens]."
   [s]
   (let [[sym offset s] (formula-with-notation s)]
     (util/map-result-ok [[_ tokens] (tkn/tokenize s offset)]
@@ -56,8 +56,8 @@
     :prefix  (postfix/eval-prefix tokens)))
 
 (defn eval-repl
-  "Evaluate string `s` and make some data for repl. :ok contains sequence that
-  can be applied to `print-success`."
+  "Evaluates string `s` and makes some data for REPL. When `:ok` it contains
+  some sequence that can be applied to `print-success`."
   [s]
   (util/map-result-ok
    [[_ data] (tokenize-detect-notation s)]
